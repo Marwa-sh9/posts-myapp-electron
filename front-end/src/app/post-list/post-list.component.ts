@@ -133,13 +133,6 @@ export class PostListComponent implements OnInit, OnDestroy {
       });
       return;
     }
-
-    // 3. إعادة تعيين الحقول لبدء منشور جديد
-    this.selectedPost = null;
-    this.title = '';
-    this.text = '';
-    this.tags = '';
-    this.showSuccessDialog('تم إلغاء اختيار المنشور الحالي. جاهز لإنشاء منشور جديد.');
   }
 
   async addPostAction(): Promise<void> {
@@ -171,7 +164,7 @@ export class PostListComponent implements OnInit, OnDestroy {
 
     if (!trimmedText) {
       this.showErrorDialog('لا يمكن أن يكون نص المنشور فارغًا. الرجاء إدخال نص.');
-      return; // إيقاف العملية
+      return; 
     }
 
     this.dialog.open(ConfirmDialogComponent, {
