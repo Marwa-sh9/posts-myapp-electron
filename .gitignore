@@ -1,0 +1,19 @@
+node_modules
+# Node.js dependencies and logs
+/node_modules
+npm-debug.log
+
+# Angular/Electron Build Output
+/dist
+/client
+/tmp
+/.angular/cache
+
+# Environment and Database Files
+*.db
+*.sqlite
+.env
+
+# OS and Editor specific files
+.DS_Store
+*.vscode

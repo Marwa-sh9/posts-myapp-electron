@@ -1,0 +1,18 @@
+mat-toolbar {
+  text-align: center;
+  font-size: 20px;
+}
+
+div[dir="rtl"] {
+  text-align: right;
+  direction: rtl;
+}
+
+.app-title {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.active-link {
+  border-bottom: 2px solid white;
+}

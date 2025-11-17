@@ -1,0 +1,76 @@
+{
+    "name": "posts-myapp",
+    "version": "1.0.0",
+    "description": "Empty Electron template project",
+    "main": "main.js",
+    "scripts": {
+        "start": "npm run build-frontend && electron .",
+        "dev": "electron . --dev",
+        "build-frontend": "cd front-end && ng build --configuration production --output-path ../client --base-href ./",
+        "build-electron": "electron-builder",
+        "clean": "rimraf dist client/browser",
+        "dist": "npm run clean && npm run rebuild && npm run build-frontend && electron-builder --publish=never",
+        "rebuild": "electron-rebuild -f -w"
+    },
+    "keywords": [
+        "electron",
+        "desktop",
+        "template"
+    ],
+    "author": "",
+    "license": "MIT",
+    "devDependencies": {
+        "@analogjs/vite-plugin-angular": "^1.21.1",
+        "@types/node": "^24.5.2",
+        "electron": "^28.3.3",
+        "electron-builder": "^24.6.4",
+        "electron-rebuild": "^3.2.9",
+        "rimraf": "^6.1.0"
+    },
+    "build": {
+        "appId": "com.example.posts-myapp",
+        "productName": "MyPost",
+        "directories": {
+            "output": "dist"
+        },
+        "files": [
+            "**/*",
+            "!node_modules/**/*"
+        ],
+        "extraResources": [
+            {
+                "from": "node_modules/sqlite3/",
+                "to": "node_modules/sqlite3",
+                "filter": [
+                    "**/*"
+                ]
+            },
+            {
+                "from": "node_modules/bindings/",
+                "to": "node_modules/bindings",
+                "filter": [
+                    "**/*"
+                ]
+            },
+            {
+                "from": "node_modules/file-uri-to-path/",
+                "to": "node_modules/file-uri-to-path",
+                "filter": [
+                    "**/*"
+                ]
+            }
+        ],
+        "win": {
+            "target": "nsis"
+        },
+        "mac": {
+            "target": "dmg"
+        },
+        "linux": {
+            "target": "AppImage"
+        }
+    },
+    "dependencies": {
+        "sqlite3": "^5.1.7"
+    }
+}

@@ -1,0 +1,127 @@
+<div class="page-container">
+
+  <!-- قسم اليمين: تعديل المنشور -->
+  <div class="right-section">
+    <div *ngIf="selectedPost; else noPostSelected">
+      <mat-card class="edit-post-card">
+        <mat-card-header>
+          <mat-card-title> المنشور #{{ selectedPost.id }}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="edit-post-form">
+            <mat-form-field appearance="outline" class="full-width-tag">
+              <input matInput [(ngModel)]="selectedPost.title" name="title">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width-post">
+              <textarea matInput [(ngModel)]="selectedPost.text" name="text"
+                rows="8"></textarea>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width-tag">
+              <input matInput [(ngModel)]="selectedPost.tags" name="tags">
+            </mat-form-field>
+          </div>
+        </mat-card-content>
+        <mat-card-actions class="button-group">
+          <button mat-raised-button color="primary" (click)="savePost()">
+            حفظ التعديلات
+          </button>
+          <button mat-raised-button color="warn" (click)="deletePost(selectedPost.id)">
+            حذف المنشور
+          </button>
+          <button mat-raised-button color="gray" (click)="newPost()">
+           جديد  
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
+
+    <ng-template #noPostSelected>
+      <mat-card class="edit-post-card">
+        <mat-card-header>
+          <mat-card-title>إضافة منشور </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="edit-post-form">
+            <mat-form-field appearance="outline" class="full-width-tag">
+              <input matInput [(ngModel)]="title" name="newTitle">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width-post">
+              <textarea matInput [(ngModel)]="text" name="newText"
+                rows="8"></textarea>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width-tag">
+              <input matInput [(ngModel)]="tags" name="newTags">
+            </mat-form-field>
+          </div>
+        </mat-card-content>
+        <mat-card-actions class="button-group">
+          <button mat-raised-button color="primary" (click)="addPostAction()">
+            اضافة
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </ng-template>
+
+  </div>
+
+  <!-- قسم اليسار: عرض قائمة المنشورات -->
+  <div class="left-section">
+    <!-- حقل البحث -->
+    <div class="search-box">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>بحث</mat-label>
+        <input matInput [(ngModel)]="searchKeyword" (input)="searchPosts()">
+      </mat-form-field>
+    </div>
+
+    <!-- رسالة عدم وجود نتائج بحث -->
+    <div class="no-results-message" *ngIf="searchKeyword.trim() && searchResults.length === 0">
+      <p>لا توجد نتائج للبحث.</p>
+    </div>
+
+    <!-- نتائج البحث أو قائمة المنشورات -->
+    <div class="posts-list" *ngIf="searchKeyword.trim() && searchResults.length > 0">
+      <mat-card *ngFor="let post of searchResults" class="post-card" (click)="selectPost(post)">
+        <mat-card-content>
+          <div class="post-header">
+            <div class="post-id">منشور #{{ post.id }}</div>
+          </div>
+          <div class="post-title">{{ post.title }}</div>
+          <div class="post-text">{{ post.text }}</div>
+          <div class="post-tags" *ngIf="post.tags">
+            <mat-chip-listbox>
+              <mat-chip *ngFor="let tag of post.tags.split(',')">{{ tag }}</mat-chip>
+            </mat-chip-listbox>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- قائمة المنشورات الكاملة -->
+    <div class="posts-list" *ngIf="!searchKeyword.trim() || searchResults.length === 0">
+      <mat-card *ngFor="let post of posts" class="post-card" (click)="selectPost(post)">
+        <mat-card-content>
+          <div class="post-header">
+            <div class="post-id">منشور #{{ post.id }}</div>
+          </div>
+          <div class="post-title">{{ post.title }}</div>
+          <div class="post-text">{{ post.text }}</div>
+          <div class="post-tags" *ngIf="post.tags">
+            <mat-chip-listbox>
+              <mat-chip *ngFor="let tag of post.tags.split(',')">{{ tag }}</mat-chip>
+            </mat-chip-listbox>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+
+    <!-- رسالة عدم وجود منشورات -->
+    <div class="no-posts-message" *ngIf="posts.length === 0 && !searchKeyword.trim()">
+      <p>لا يوجد منشورات لعرضها.</p>
+      <a mat-raised-button color="primary" [routerLink]="['/add']">
+        إضافة أول منشور
+      </a>
+    </div>
+  </div>
+</div>

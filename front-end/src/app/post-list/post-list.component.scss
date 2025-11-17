@@ -1,0 +1,160 @@
+.page-container {
+  display: flex;
+  height: 93vh;
+  padding: 15px;
+  direction: rtl;
+  text-align: right;
+  gap: 5px;
+}
+.mat-mdc-card-content:first-child {
+    padding-top: 1px;
+}
+
+.left-section {
+  flex: 3;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 5px;
+  overflow-y: auto;
+}
+
+.search-box {
+  padding: 5px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+.search-field {
+  width: 100%;
+}
+
+.posts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
+}
+
+.post-card {
+  width: 100%;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 1px;
+}
+
+.post-card:hover {
+  background-color: #f5f5f5;
+}
+
+.post-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.post-id {
+  font-size: 14px;
+  color: #666;
+}
+
+.post-text {
+  margin-bottom: 10px;
+  font-size: 16px;
+  line-height: 1.5;
+  word-break: break-word;
+
+  overflow: hidden;
+
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+  white-space: normal;
+
+}
+
+.post-tags {
+  margin: 10px 0;
+}
+
+.post-title {
+  margin: 10px 0;
+}
+
+.post-actions {
+  display: flex;
+  justify-content: flex-start;
+  gap: 5px;
+  padding: 8px;
+}
+
+.right-section {
+  flex: 7;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #e5e1e5;
+  border-radius: 8px;
+  padding: 5px;
+  overflow-y: auto;
+
+}
+.edit-post-card {
+  width: 100%;
+  height: 92vh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+.edit-post-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  height: 77vh;
+}
+
+.full-width-post {
+  flex: 1;
+  width: 100%;
+  min-height: 355px;
+
+}
+
+.full-width-post textarea {
+  width: 100%;
+  height: 550px;
+  resize: vertical;
+  /* منع تغيير الحجم يدويًا */
+  max-height: 360px;
+}
+
+.full-width-tag {
+  height: 80px;
+}
+
+.no-posts-message,
+.no-results-message,
+.no-post-selected {
+  text-align: center;
+  padding: 40px;
+  font-size: 18px;
+}
+
+.delete-icon {
+  color: red;
+  font-size: 18px;
+  padding: 10px;
+  margin: 0;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+  /* إضافة مسافة بين الزرين */
+  justify-content: space-around;
+  /* محاذاة الزرين إلى اليمين */
+  padding: 10px;
+}

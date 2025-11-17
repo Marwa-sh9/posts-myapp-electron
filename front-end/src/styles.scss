@@ -1,0 +1,74 @@
+/* استيراد ألوان Material Design */
+@use '@angular/material' as mat;
+
+/* تعريف ألوان المشروع */
+$primary: mat.define-palette(mat.$purple-palette, 500, 300, 700);
+$accent: mat.define-palette(mat.$pink-palette, A200, A100, A400);
+$theme: mat.define-light-theme((
+  color: (
+    primary: $primary,
+    accent: $accent,
+  )
+));
+
+/* تطبيق الألوان */
+@include mat.all-component-themes($theme);
+@include mat.core();
+
+/* تحويل الاتجاه إلى اليمين (RTL) */
+html, body {
+  direction: rtl;
+  text-align: right;
+}
+
+.post-card {
+  max-width: 600px;
+  margin: 20px auto;
+  padding: 20px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+
+  .full-width {
+    width: 100%;
+    margin-bottom: 15px;
+  }
+
+  .post-form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .post-item {
+    border-bottom: 1px solid #eee;
+    padding: 10px 0;
+    display: flex;
+    align-items: center;
+
+    .tags {
+      color: mat.get-color-from-palette($primary, 500);
+      font-size: 0.9em;
+      margin: 5px 0;
+    }
+  }
+
+  .results-container {
+    margin-top: 20px;
+  }
+
+  .no-results {
+    text-align: center;
+    padding: 30px 0;
+    color: #666;
+
+    .large-icon {
+      font-size: 48px;
+      margin-bottom: 10px;
+      color: #ccc;
+    }
+  }
+
+  .add-button {
+    position: absolute;
+    left: 20px;
+  }
+}

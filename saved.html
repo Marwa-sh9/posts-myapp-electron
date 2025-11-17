@@ -1,0 +1,576 @@
+const { app, BrowserWindow, ipcMain, protocol, net, Menu } = require('electron');
+
+const sqlite3 = require('sqlite3').verbose();
+
+const path = require('path');
+
+const { title } = require('process');
+
+
+
+const isDev = process.env.NODE_ENV === 'development';
+
+
+
+const PRODUCTION_URL = 'app://host/client/browser/index.html';
+
+let mainWindow;
+
+let db;
+
+
+
+// تسجيل البروتوكول 'app' كامتياز للسماح بالتحميل من app.asar
+
+protocol.registerSchemesAsPrivileged([
+
+  { scheme: 'app', privileges: { standard: true, secure: true, bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true } }
+
+]);
+
+
+
+const DB_FILE_NAME = 'myposts.db';
+
+
+
+//  تحويل دالة إنشاء قاعدة البيانات إلى Promise لضمان التسلسل
+
+function createDatabase() {
+
+  return new Promise((resolve, reject) => {
+
+    const dbPath = path.join(app.getPath('userData'), DB_FILE_NAME);
+
+    db = new sqlite3.Database(dbPath, (err) => {
+
+      if (err) {
+
+        console.error('خطأ في فتح قاعدة البيانات:', err.message);
+
+        return reject(err);
+
+      }
+
+      console.log('قاعدة البيانات متصلة بنجاح!', dbPath);
+
+
+
+      // تنفيذ إنشاء الجدول داخل serialize لضمان أن الاستعلام ينتهي قبل أن يبدأ أي شيء آخر
+
+      db.serialize(() => {
+
+        db.run(`
+
+            CREATE TABLE IF NOT EXISTS myposts (
+
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+            title TEXT,
+
+            text TEXT NOT NULL,
+
+            tags TEXT
+
+          ) `, (err) => {
+
+          if (err) {
+
+            console.error('خطأ في إنشاء الجدول:', err.message);
+
+            return reject(err);
+
+          }
+
+          console.log('تم إنشاء/التحقق من جدول myposts بنجاح.');
+
+          resolve(); // تم الانتهاء بنجاح
+
+        });
+
+      });
+
+    });
+
+  });
+
+}
+
+
+
+function createWindow() {
+
+  mainWindow = new BrowserWindow({
+
+    width: 1000,
+
+    height: 800,
+
+    webPreferences: {
+
+      preload: path.join(__dirname, 'preload.js'),
+
+      nodeIntegration: false,
+
+      contextIsolation: true,
+
+    }
+
+  });
+
+
+
+  if (isDev) {
+
+    mainWindow.loadURL('http://localhost:4200');
+
+  } else {
+
+    mainWindow.loadURL(PRODUCTION_URL);
+
+  }
+
+
+
+  // mainWindow.webContents.openDevTools();
+
+  function reloadCurrentPage() {
+
+    if (isDev) {
+
+      // في التطوير، نستخدم reload() العادية التي تحافظ على المسار
+
+      mainWindow.webContents.reload();
+
+    } else {
+
+      mainWindow.webContents.reloadIgnoringCache();
+
+    }
+
+  }
+
+
+
+  mainWindow.webContents.on('context-menu', (event, params) => {
+
+    const template = [
+
+      { label: 'رجوع', role: 'goBack', enabled: params.canGoBack },
+
+      {
+
+        label: 'إعادة تحميل', click: () => {
+
+          reloadCurrentPage();
+
+        }
+
+      },
+
+      { type: 'separator' },
+
+      {
+
+        label: 'عرض مسار قاعدة البيانات',
+
+        click: () => {
+
+          // 1. بناء المسار الكامل لقاعدة البيانات
+
+          const dbPath = path.join(app.getPath('userData'), DB_FILE_NAME);
+
+
+
+          mainWindow.webContents.executeJavaScript(`
+
+            alert('مسار قاعدة البيانات:\\n${dbPath.replace(/\\/g, '\\\\')}')
+
+          `);
+
+        }
+
+      },
+
+
+
+      // أوامر الملفات
+
+      { label: 'حفظ باسم...', role: 'save' },
+
+      {
+
+        label: 'طباعة...',
+
+        click: () => {
+
+          mainWindow.webContents.print();
+
+        }
+
+      },
+
+      { type: 'separator' },
+
+      { label: 'قص', role: 'cut', enabled: params.isEditable || params.selectionText.length > 0 },
+
+      { label: 'نسخ', role: 'copy', enabled: params.selectionText.length > 0 },
+
+      { label: 'لصق', role: 'paste', enabled: params.isEditable },
+
+      { label: 'تحديد الكل', role: 'selectAll' },
+
+      { type: 'separator' },
+
+
+
+      // أوامر المطورين والبحث
+
+      {
+
+        label: 'بحث',
+
+        click: () => {
+
+          console.log('البحث غير متاح حاليًا.');
+
+        }
+
+      },
+
+      { type: 'separator' },
+
+      {
+
+        label: 'عرض مصدر الصفحة',
+
+        click: () => {
+
+          console.log('عرض مصدر الصفحة غير متاح حاليًا.');
+
+        }
+
+      },
+
+      {
+
+        label: 'فحص العنصر',
+
+        click: () => {
+
+          mainWindow.webContents.inspectElement(params.x, params.y);
+
+        }
+
+      }
+
+    ];
+
+    const menu = Menu.buildFromTemplate(template);
+
+    menu.popup(mainWindow);
+
+  });
+
+}
+
+
+
+app.on('ready', async () => {
+
+  // معالج البروتوكول 'app://' ليتمكن من تحميل الملفات من حزمة ASAR
+
+  if (!isDev) {
+
+    protocol.handle('app', (request) => {
+
+      const urlPath = new URL(request.url).pathname;
+
+      const decodedPath = decodeURIComponent(urlPath.split('#')[0]);
+
+      const fullPath = path.join(app.getAppPath(), decodedPath);
+
+      const fallbackPath = path.join(app.getAppPath(), 'client/browser/index.html');
+
+      let finalPath;
+
+      if (decodedPath === '/' || !decodedPath.includes('.')) {
+
+        finalPath = fallbackPath;
+
+      } else {
+
+        finalPath = fullPath;
+
+      }
+
+
+
+      // في كل الأحوال، نستخدم net.fetch لتحميل الملف
+
+      return net.fetch(path.normalize(finalPath));
+
+    });
+
+  }
+
+
+
+  try {
+
+    await createDatabase(); //  انتظار تهيئة قاعدة البيانات
+
+    createWindow(); //  ثم تحميل الواجهة الأمامية
+
+  } catch (error) {
+    console.error('فشل في بدء تشغيل التطبيق بسبب خطأ في قاعدة البيانات. سيتم إغلاق التطبيق:', error);
+    app.quit();
+  }
+});
+
+// إضافة منشور (INSERT)
+ipcMain.on('add-post', (event, { title, text, tags }) => {
+    const trimmedTitle = String(title || '').trim();
+    const trimmedText = String(text || '').trim();
+    const safeTags = tags ? String(tags).trim() : '';
+
+    if (!trimmedTitle || !trimmedText) {
+        return event.reply('post-added', { success: false, error: 'العنوان والنص مطلوبان.' });
+    }
+
+    // ⭐ إزالة db.serialize()
+    db.run('INSERT INTO myposts (title, text, tags) VALUES (?, ?,?)', [trimmedTitle, trimmedText, safeTags], function (err) {
+        if (err) {
+            console.error('خطأ في إضافة المنشور:', err);
+            event.reply('post-added', { success: false, error: err.message });
+        } else {
+            event.reply('post-added', { success: true, id: this.lastID });
+            if (mainWindow) {
+                mainWindow.webContents.send('refresh-posts');
+            }
+        }
+    });
+});
+
+
+// تعديل منشور (UPDATE)
+ipcMain.on('edit-post', (event, { id, title, text, tags }) => {
+    const trimmedTitle = String(title || '').trim();
+    const trimmedText = String(text || '').trim();
+    const safeTags = tags ? String(tags).trim() : '';
+
+    if (!trimmedTitle || !trimmedText) {
+        return event.reply('post-edited', { success: false, error: 'العنوان والنص مطلوبان.' });
+    }
+
+    // ⭐ إزالة db.serialize()
+    db.run('UPDATE myposts SET title = ? , text = ?, tags = ? WHERE id = ?', [trimmedTitle, trimmedText, safeTags, id], function (err) {
+        if (err) {
+            console.error('خطأ في تعديل المنشور:', err);
+            event.reply('post-edited', { success: false, error: err.message });
+        } else {
+            event.reply('post-edited', { success: true });
+            if (mainWindow) {
+                mainWindow.webContents.send('refresh-posts');
+            }
+        }
+    });
+});
+// بحث عن منشورات (SELECT) - يتضمن الحماية ضد كلمة البحث الفارغة
+ipcMain.on('search-posts', (event, keyword) => {
+  const safeKeyword = keyword ? String(keyword).trim() : '';
+  if (!safeKeyword) {
+    // إذا كانت الكلمة فارغة، استرجع كل شيء
+    db.all('SELECT * FROM myposts', (err, results) => {
+      if (err) {
+        console.error('خطأ في الحصول على المنشورات:', err);
+        event.reply('search-results', []);
+      } else {
+        event.reply('search-results', results);
+      }
+    });
+    return;
+  }
+  const query = 'SELECT * FROM myposts WHERE title like ? or text LIKE ? OR tags LIKE ?';
+  const searchTerm = `%${safeKeyword}%`;
+  db.all(query, [searchTerm, searchTerm, searchTerm], (err, results) => {
+    if (err) {
+      console.error('خطأ في البحث:', err);
+      event.reply('search-results', []);
+    } else {
+      event.reply('search-results', results);
+    }
+  });
+});
+// الحصول على جميع المنشورات (SELECT)
+ipcMain.on('get-all-posts', (event) => {
+  db.all('SELECT * FROM myposts', (err, results) => {
+    if (err) {
+      console.error('خطأ في الحصول على المنشورات:', err);
+      event.reply('all-posts', []);
+    } else {
+      event.reply('all-posts', results);
+    }
+  });
+});
+// ... (بقية الدوال دون تغيير)
+ipcMain.on('get-post', (event, id) => {
+  db.get('SELECT * FROM myposts WHERE id = ?', [id], (err, result) => {
+    if (err) {
+      console.error('خطأ في الحصول على المنشور:', err);
+      event.reply('post-data', null);
+    } else {
+      event.reply('post-data', result);
+    }
+
+  });
+
+});
+
+ipcMain.on('delete-post', (event, id) => {
+    db.run('DELETE FROM myposts WHERE id = ?', [id], function (err) {
+        if (err) {
+            console.error('خطأ في حذف المنشور:', err);
+            event.reply('post-deleted', { success: false, error: err.message });
+        } else {
+            event.reply('post-deleted', { success: true });
+            if (mainWindow) {
+                mainWindow.webContents.send('refresh-posts');
+            }
+        }
+    });
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{
+    "name": "posts-myapp",
+    "version": "1.0.0",
+    "description": "Empty Electron template project",
+    "main": "main.js",
+    "scripts": {
+        "start": "electron .",
+        "dev": "electron . --dev",
+        "build-frontend": "cd front-end && ng build --configuration production --output-path ../client --base-href ./",
+        "build-electron": "electron-builder",
+        "clean": "rimraf dist client/browser",
+        "dist": "npm run clean && npm run rebuild && npm run build-frontend && electron-builder --publish=never",
+        "rebuild": "electron-rebuild -f -w"
+    },
+    "keywords": [
+        "electron",
+        "desktop",
+        "template"
+    ],
+    "author": "",
+    "license": "MIT",
+    "devDependencies": {
+        "@analogjs/vite-plugin-angular": "^1.21.1",
+        "@types/node": "^24.5.2",
+        "electron": "^28.3.3",
+        "electron-builder": "^24.6.4",
+        "electron-rebuild": "^3.2.9",
+        "rimraf": "^6.1.0"
+    },
+    "build": {
+        "appId": "com.example.posts-myapp",
+        "productName": "MyPost",
+        "directories": {
+            "output": "dist"
+        },
+        "files": [
+            "**/*",
+            "!node_modules/**/*"
+        ],
+        "extraResources": [
+            {
+                "from": "node_modules/sqlite3/",
+                "to": "node_modules/sqlite3",
+                "filter": [
+                    "**/*"
+                ]
+            },
+            {
+                "from": "node_modules/bindings/",
+                "to": "node_modules/bindings",
+                "filter": [
+                    "**/*"
+                ]
+            },
+            {
+                "from": "node_modules/file-uri-to-path/",
+                "to": "node_modules/file-uri-to-path",
+                "filter": [
+                    "**/*"
+                ]
+            }
+        ],
+        "win": {
+            "target": "nsis"
+        },
+        "mac": {
+            "target": "dmg"
+        },
+        "linux": {
+            "target": "AppImage"
+        }
+    },
+    "dependencies": {
+        "sqlite3": "^5.1.7"
+    }
+}
+
+
+
+  <div class="right-section">
+    <div *ngIf="selectedPost; else noPostSelected">
+      <mat-card class="edit-post-card">
+        <mat-card-header>
+          <mat-card-title> المنشور #{{ selectedPost.id }}</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="edit-post-form">
+            <mat-form-field appearance="outline" class="full-width-tag">
+              <input matInput [(ngModel)]="selectedPost.title" name="title">
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width-post">
+              <textarea matInput [(ngModel)]="selectedPost.text" name="text" placeholder="اكتب نص المنشور هنا..."
+                rows="8"></textarea>
+            </mat-form-field>
+            <mat-form-field appearance="outline" class="full-width-tag">
+              <input matInput [(ngModel)]="selectedPost.tags" name="tags">
+            </mat-form-field>
+          </div>
+        </mat-card-content>
+        <mat-card-actions class="button-group">
+          <button mat-raised-button color="primary" (click)="savePost()">
+            حفظ التعديلات
+          </button>
+          <button mat-raised-button color="warn" (click)="deletePost(selectedPost.id)">
+            حذف المنشور
+          </button>
+          <button mat-raised-button color="gray" (click)="newPost()">
+           جديد  
+          </button>
+        </mat-card-actions>
+      </mat-card>
+    </div>
