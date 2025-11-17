@@ -1,1 +1,14 @@
-<p>confirm-dialog works!</p>
+<h2 mat-dialog-title style="text-align: right; color: #3f51b5;">
+    {{ data.title }}
+</h2>
+<mat-dialog-content style="text-align: right;">
+    <p>{{ data.message }}</p>
+</mat-dialog-content>
+<mat-dialog-actions style="justify-content: flex-start;">
+    <button mat-raised-button color="warn" (click)="onCancel()">
+        {{ data.cancelText }}
+    </button>
+    <button mat-raised-button color="primary" (click)="onConfirm()" cdkFocusInitial>
+        {{ data.confirmText }}
+    </button>
+</mat-dialog-actions>
