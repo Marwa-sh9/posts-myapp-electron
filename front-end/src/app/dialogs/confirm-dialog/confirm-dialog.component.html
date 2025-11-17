@@ -5,7 +5,7 @@
     <p>{{ data.message }}</p>
 </mat-dialog-content>
 <mat-dialog-actions style="justify-content: flex-start;">
-    <button mat-raised-button color="warn" (click)="onCancel()">
+    <button *ngIf="data.cancelText !== null"  mat-raised-button color="warn" (click)="onCancel()">
         {{ data.cancelText }}
     </button>
     <button mat-raised-button color="primary" (click)="onConfirm()" cdkFocusInitial>

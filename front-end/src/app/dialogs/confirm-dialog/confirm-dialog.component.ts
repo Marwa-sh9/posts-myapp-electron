@@ -8,7 +8,7 @@ export interface ConfirmDialogData {
   title: string;
   message: string;
   confirmText: string;
-  cancelText: string;
+  cancelText: string | null;
 }
 
 @Component({
@@ -25,7 +25,7 @@ export class ConfirmDialogComponent {
   ) {
     // تعيين قيم افتراضية
     this.data.confirmText = data.confirmText || 'تأكيد';
-    this.data.cancelText = data.cancelText || 'إلغاء';
+    this.data.cancelText = (data.cancelText === null) ? null : (data.cancelText || 'إلغاء');
   }
 
   onConfirm(): void {

@@ -231,8 +231,16 @@ export class PostListComponent implements OnInit, OnDestroy {
     });
   }
 
-  private showSuccessDialog(message: string): void {
-    console.log(message);
+ private showSuccessDialog(message: string): void {
+    this.dialog.open(ConfirmDialogComponent, {
+      data: {
+        message: message,
+        confirmText: 'حسناً',
+        cancelText: null // لإخفاء زر الإلغاء
+      },
+      disableClose: false // يمكن الإغلاق بالنقر خارج الحوار
+    });
+    console.log(`SUCCESS: ${message}`);
   }
 
   private showErrorDialog(message: string): void {
